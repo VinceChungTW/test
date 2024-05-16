@@ -1,0 +1,132 @@
+;-------------------------------------------------------------------
+; @file cli_system_reset.ttl
+;
+; 
+; @author PIT
+;-------------------------------------------------------------------
+
+
+; Create log
+gettime logstr "bmc_update_cli_log-%Y%m%d-%H%M%S.txt"
+getdir mdir
+sprintf '%s\%s' mdir logstr
+filename = inputstr
+
+logopen filename 0 1 1
+logwrite '************Log start'#13#10
+
+
+looptimes = 1 ;
+;while looptimes <=5000
+while looptimes >0
+	sprintf "*******************Cycle %d ********************" looptimes
+	str=inputstr
+	logwrite #13#10
+	logwrite str
+	logwrite #13#10
+
+	timeout = 2
+	
+	; Variables definitions, you can modify it  
+	os_bmc_prompt = '~#'	
+	cli_bmc_prompt = 'BMC localhost>'
+        cli_os_prompt = 'root@xxx:~#'
+        cli_os_login = 'xxx login:'
+	apc_os_prompt='apc>'
+	
+	; Login LOADER-B
+    
+	
+	;wait 'LOADER-A'
+	send #4
+
+	while 1 
+		wait 'LOADER-A'
+		if result=1 then
+			sendln 'priv set test'
+			;wait 'System initialized'
+			;send #7
+			;wait 'BMC login:'
+			break
+		endif
+		pause 1
+		send #4
+		sendln \n
+	endwhile
+
+	;sendln 'priv set test'
+	;sendln 'test'
+	wait 'Warning:'
+	pause 1
+	;DHCP
+	sendln 'sp kcs 0x0c 0x0 0x01 0x01 0x04 0x02'
+	pause 5
+	;Static
+	sendln 'sp kcs 0x0c 0x0 0x01 0x01 0x04 0x01'
+	pause 5
+	;put sp status to let console can switch to BMC 
+	sendln 'sp status;sp status;sp status;sp status;sp reset;'
+
+	; Login bmc serial port
+	send #7
+	send #7
+        sendln \n
+        sendln \n
+
+	send #4
+	send #4
+        sendln \n
+        sendln \n
+
+	send #7
+	send #7
+        sendln \n
+        sendln \n
+
+	;while 1 
+		;wait 'System initialized'
+		;if result=1 then
+			;send #7
+			;wait 'System initialized'
+			;send #7
+			;wait 'BMC login:'
+			;break
+		;endif
+		;pause 1
+	;endwhile
+	
+	;login 
+	pause 180
+	send #7
+	send #7
+        sendln \n
+        sendln \n
+	wait 'login:'
+	sendln 'diag'
+    ;send #10
+	wait 'Password:'
+        pause 1
+	sendln 'test'
+	sendln \n
+	wait os_bmc_prompt
+	if result=1 then
+	   sendln 'echo BMC is alive '
+	   sendln 'udhcpc'
+	endif
+	
+	; Login LOADER-B
+	send #4
+	pause 1
+	send #4
+	pause 20
+    sendln \n
+    
+	
+looptimes = looptimes + 1
+endwhile
+
+logwrite #13#10'************Log end'#13#10
+Logclose
+
+messagebox "complete!" "bmc_update"
+;closett
